@@ -21,3 +21,4 @@ HEADERS = {
     "Key" : API_KEY,
     "Accept":"application/json"
 }
+
