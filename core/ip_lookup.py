@@ -1,3 +1,14 @@
+import sys
+import os
+
+PROJECT_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_FOLDER)
+
+# Build correct paths to data files
+SAMPLE_FILE = os.path.join(PROJECT_FOLDER, "data", "sample_data.json")
+HISTORY_FILE = os.path.join(PROJECT_FOLDER, "data", "history.json")
+FLAGGED_FILE = os.path.join(PROJECT_FOLDER, "data", "flagged_ips.json")
+
 import requests
 import json
 from datetime import datetime
@@ -61,7 +72,7 @@ def check_from_internet(ip):
 def check_from_file(ip):
     try:
         #open the local backup file
-        with open("data/sample_data.json", "r") as f:
+        with open(SAMPLE_FILE, "r") as f:
             all_ips = json.load(f)
         #search for the IP in the list
         for item in all_ips:
@@ -93,7 +104,7 @@ def check_ip(ip):
 def save_history(result):
     try:
         #read old history
-        with open("data/history.json", "r") as f:
+        with open(HISTORY_FILE, "r") as f:
             history = json.load(f)
     except:
         #file doesn't exist, start empty
@@ -107,7 +118,7 @@ def save_history(result):
         history = history[:Max_History]
     
     #save back to file
-    with open("data/history.json", "w") as f:
+    with open(HISTORY_FILE, "w") as f:
         json.dump(history, f, indent=2)
 
 #save dangerous IP to flagged list
@@ -121,7 +132,7 @@ def save_dangerous(result):
     
     try:
         #read old flagged IPs
-        with open("data/flagged_ips.json", "r") as f:
+        with open(FLAGGED_FILE, "r") as f:
             flagged = json.load(f)
     except:
         #file doesn't exist, start empty
@@ -134,7 +145,7 @@ def save_dangerous(result):
     #add to list
     flagged.insert(0, result)
     #save back
-    with open("data/flagged_ips.json", "w") as f:
+    with open(FLAGGED_FILE, "w") as f:
         json.dump(flagged, f, indent=2)
     
     print(f"FLAGGED: {result['ip']} is dangerous!")
