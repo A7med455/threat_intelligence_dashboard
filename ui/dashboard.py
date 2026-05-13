@@ -12,12 +12,15 @@ sys.path.insert(0, PROJECT_ROOT)
 
 # File paths
 HISTORY_PATH = os.path.join(PROJECT_ROOT, "data", "history.json")
+FLAGGED_PATH = os.path.join(PROJECT_ROOT, "data", "flagged_ips.json")
 
 # IMPORTS
 from core.ip_lookup import lookup_ip
 from core.threat_analyzer import analyze_threat
 from core.password_checker import check_strength
 from core.caesar_cipher import encrypt, decrypt, brute_force_decrypt
+from core.report_generator import generate_txt_report, generate_json_report, generate_csv_report
+from core.alert_system import check_and_alert, get_all_flagged, clear_flagged, remove_flag
 from ui.components.searchbar import render_search_bar
 from ui.components.threatcards import render_threat_cards, render_empty_state
 from ui.components.charts import render_score_gauge, render_history_chart, render_risk_pie
@@ -71,20 +74,18 @@ st.markdown("""
     hr {
         border-color: #334155;
     }
-    .hash-box {
-        background-color: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 10px;
-        padding: 15px;
-        font-family: monospace;
-        word-break: break-all;
+    .flagged-ip {
+        background-color: #7f1d1d;
+        border-radius: 8px;
+        padding: 10px;
+        margin: 5px 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
 # -------------------------------------------------------
-# HELPER: Save search to history
+# HELPER: Save search to history AND check alert
 # -------------------------------------------------------
 
 def save_to_history(analysis):
@@ -111,7 +112,7 @@ def save_to_history(analysis):
 
 
 # -------------------------------------------------------
-# SIDEBAR (only for navigation and info)
+# SIDEBAR
 # -------------------------------------------------------
 
 with st.sidebar:
@@ -122,7 +123,9 @@ with st.sidebar:
         "This toolkit combines:\n"
         "- IP reputation checking\n"
         "- Password strength analysis\n"
-        "- Caesar cipher encryption"
+        "- Caesar cipher encryption\n"
+        "- Report generation\n"
+        "- Alert system for dangerous IPs"
     )
     st.markdown("---")
     st.markdown("**Risk Scale**")
@@ -139,12 +142,19 @@ with st.sidebar:
     st.markdown("---")
 
     # Clear history button
-    if st.button("🗑️ Clear History"):
-        if os.path.exists(HISTORY_PATH):
-            os.remove(HISTORY_PATH)
-            st.success("History cleared!")
-        else:
-            st.info("No history to clear.")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🗑️ Clear History", use_container_width=True):
+            if os.path.exists(HISTORY_PATH):
+                os.remove(HISTORY_PATH)
+                st.success("History cleared!")
+            else:
+                st.info("No history to clear.")
+    
+    with col2:
+        if st.button("🚨 Clear Alerts", use_container_width=True):
+            clear_flagged()
+            st.success("All alerts cleared!")
 
 
 # -------------------------------------------------------
@@ -152,11 +162,11 @@ with st.sidebar:
 # -------------------------------------------------------
 
 st.markdown("# 🛡️ Cyber Security Toolkit")
-st.markdown("*IP Threat Intelligence | Password Strength Checker | Caesar Cipher*")
+st.markdown("*IP Threat Intelligence | Password Checker | Caesar Cipher | Reports & Alerts*")
 st.markdown("---")
 
 # Create tabs for each tool
-tab1, tab2, tab3 = st.tabs(["🔍 IP Threat Lookup", "🔐 Password Strength Checker", "🔒 Caesar Cipher Tool"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔍 IP Threat Lookup", "🔐 Password Checker", "🔒 Caesar Cipher", "📋 Reports & Alerts"])
 
 # ============================================================
 # TAB 1: IP THREAT LOOKUP
@@ -173,11 +183,37 @@ with tab1:
             raw_data = lookup_ip(searched_ip)
             analysis = analyze_threat(raw_data)
             save_to_history(analysis)
+            
+            # Check alert system
+            alert_result = check_and_alert(raw_data)
+            if alert_result["alert_triggered"]:
+                st.error(f"🚨 {alert_result['message']}")
         
         results_col, gauge_col = st.columns([3, 1])
         
         with results_col:
             render_threat_cards(analysis)
+            
+            # Report generation buttons
+            st.markdown("---")
+            st.markdown("### 📄 Generate Report")
+            col_r1, col_r2, col_r3 = st.columns(3)
+            
+            with col_r1:
+                if st.button("📝 TXT Report", use_container_width=True):
+                    report_path = generate_txt_report(analysis)
+                    st.success(f"Report saved to: {report_path}")
+            
+            with col_r2:
+                if st.button("📊 JSON Report", use_container_width=True):
+                    report_path = generate_json_report(analysis)
+                    st.success(f"Report saved to: {report_path}")
+            
+            with col_r3:
+                if st.button("📑 Full Report (TXT+JSON)", use_container_width=True):
+                    paths = save_full_report(analysis)
+                    st.success(f"TXT: {paths['txt']}")
+                    st.success(f"JSON: {paths['json']}")
         
         with gauge_col:
             st.markdown("<br><br>", unsafe_allow_html=True)
@@ -223,7 +259,6 @@ with tab2:
             if password:
                 result = check_strength(password)
                 
-                # Display strength with color
                 if result['strength'] == "Strong":
                     st.success(f"### 💪 STRONG PASSWORD")
                     st.success(f"Score: {result['score']}/{result['max_score']}")
@@ -234,10 +269,8 @@ with tab2:
                     st.error(f"### ❌ WEAK PASSWORD")
                     st.error(f"Score: {result['score']}/{result['max_score']}")
                 
-                # Progress bar
                 st.progress(result['score'] / result['max_score'])
                 
-                # Feedback
                 st.markdown("---")
                 st.markdown("**Feedback & Tips:**")
                 for fb in result['feedback']:
@@ -250,27 +283,14 @@ with tab2:
             else:
                 st.warning("Please enter a password first.")
     
-    # Password tips
     with st.expander("📝 Tips for a Strong Password"):
         st.markdown("""
         **What makes a password strong?**
-        
         - ✅ **Length:** At least 12 characters
         - ✅ **Uppercase letters:** A, B, C...
         - ✅ **Lowercase letters:** a, b, c...
         - ✅ **Numbers:** 0, 1, 2, 3...
         - ✅ **Special characters:** !@#$%^&*()
-        
-        **Examples of strong passwords:**
-        - `MyD0g!sGr3at!2024`
-        - `C0ffee$M0rning!`
-        - `Blue$ky!Sun$hine`
-        
-        **Never use:**
-        - ❌ `password`
-        - ❌ `123456`
-        - ❌ `qwerty`
-        - ❌ Your name or birthday
         """)
 
 # ============================================================
@@ -279,78 +299,165 @@ with tab2:
 
 with tab3:
     st.markdown("### 🔒 Caesar Cipher Tool")
-    st.markdown("Encrypt or decrypt messages using the Caesar cipher method (shifts letters by a key).")
+    st.markdown("Encrypt or decrypt messages using the Caesar cipher method.")
     st.markdown("---")
     
-    # Input area
     col1, col2 = st.columns([3, 1])
     
     with col1:
         cipher_text = st.text_area(
             "Enter your message:", 
-            placeholder="Type something here... e.g., Hello World", 
+            placeholder="Type something here...", 
             key="cipher_input",
             height=100
         )
     
     with col2:
-        st.markdown("**Settings**")
         cipher_key = st.slider("Shift Key (1-25):", 1, 25, 3)
-        st.caption(f"Key {cipher_key} means A → {chr(65 + cipher_key)}")
     
-    # Action buttons
     btn_col1, btn_col2 = st.columns(2)
     
     with btn_col1:
-        if st.button("🔒 Encrypt", use_container_width=True, key="encrypt_btn"):
+        if st.button("🔒 Encrypt", use_container_width=True):
             if cipher_text:
                 encrypted = encrypt(cipher_text, cipher_key)
-                st.markdown("**🔐 Encrypted Result:**")
                 st.code(encrypted, language="text")
-                st.success(f"✅ Encrypted with key {cipher_key}")
+                st.success(f"Encrypted with key {cipher_key}")
             else:
-                st.warning("⚠️ Please enter a message first.")
+                st.warning("Enter a message first.")
     
     with btn_col2:
-        if st.button("🔓 Decrypt", use_container_width=True, key="decrypt_btn"):
+        if st.button("🔓 Decrypt", use_container_width=True):
             if cipher_text:
                 decrypted = decrypt(cipher_text, cipher_key)
-                st.markdown("**🔓 Decrypted Result:**")
                 st.code(decrypted, language="text")
-                st.success(f"✅ Decrypted with key {cipher_key}")
+                st.success(f"Decrypted with key {cipher_key}")
             else:
-                st.warning("⚠️ Please enter a message first.")
+                st.warning("Enter a message first.")
     
-    # Brute force attack section
-    st.markdown("---")
-    with st.expander("🔍 Brute Force Attack - Why Caesar Cipher is NOT secure"):
-        st.markdown("""
-        **The Problem with Caesar Cipher:**  
-        A brute force attack tries all 25 possible keys and finds the message instantly!
-        
-        This demonstrates why modern encryption (like AES) is needed for real security.
-        """)
-        
-        if st.button("🚀 Try All 25 Keys (Brute Force)", use_container_width=True):
+    with st.expander("🔍 Brute Force Attack"):
+        if st.button("Try All 25 Keys"):
             if cipher_text:
                 results = brute_force_decrypt(cipher_text)
-                st.markdown("**All possible decryptions:**")
-                
-                found = False
                 for r in results:
-                    # Highlight likely English text
-                    if "the" in r['text'].lower() or "and" in r['text'].lower() or "hello" in r['text'].lower() or "world" in r['text'].lower():
-                        st.markdown(f"✅ **Key {r['key']:2d}:** `{r['text']}` ← Likely correct!")
-                        found = True
+                    if "the" in r['text'].lower() or "hello" in r['text'].lower():
+                        st.markdown(f"✅ **Key {r['key']:2d}:** `{r['text']}`")
                     else:
                         st.markdown(f"   Key {r['key']:2d}: `{r['text']}`")
-                
-                if not found:
-                    st.info("No obvious English text found. The message might be encrypted or not in English.")
             else:
-                st.warning("⚠️ Please enter an encrypted message above first.")
+                st.warning("Enter a message first.")
+
+# ============================================================
+# TAB 4: REPORTS & ALERTS
+# ============================================================
+
+with tab4:
+    st.markdown("### 📋 Reports & Alert System")
+    st.markdown("View flagged dangerous IPs and generate batch reports.")
+    st.markdown("---")
+    
+    # Alert System Section
+    st.markdown("#### 🚨 Flagged Dangerous IPs")
+    flagged_ips = get_all_flagged()
+    
+    if flagged_ips:
+        st.markdown(f"**Total flagged IPs:** {len(flagged_ips)}")
         
-        st.caption("💡 Notice how quickly you can find the original message! This is why Caesar cipher is only used for learning, not real security.")
+        for ip_data in flagged_ips:
+            with st.container():
+                st.markdown(f"""
+                <div class="flagged-ip">
+                    <strong>🚨 {ip_data['ip']}</strong><br>
+                    Score: {ip_data['score']}/100 | Severity: {ip_data['severity']}<br>
+                    Country: {ip_data['country']} | ISP: {ip_data['isp']}<br>
+                    Flagged at: {ip_data['flagged_at']}
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col1, col2 = st.columns([1, 5])
+                with col1:
+                    if st.button(f"Remove", key=f"remove_{ip_data['ip']}"):
+                        remove_flag(ip_data['ip'])
+                        st.rerun()
+                st.markdown("---")
+    else:
+        st.info("No flagged IPs yet. Search for a dangerous IP (score >= 75) and it will appear here automatically!")
+    
+    st.markdown("---")
+    
+    # Batch Report Generation
+    st.markdown("#### 📊 Generate Batch Report")
+    st.markdown("Generate a CSV report of all searched IPs from history.")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📈 Generate CSV Report", use_container_width=True):
+            if os.path.exists(HISTORY_PATH):
+                with open(HISTORY_PATH, "r") as f:
+                    history = json.load(f)
+                
+                if history:
+                    # Convert history to format needed for CSV
+                    history_for_csv = []
+                    for entry in history:
+                        history_for_csv.append({
+                            "ip": entry.get("ip", "Unknown"),
+                            "score": entry.get("score", 0),
+                            "risk_level": entry.get("risk_level", "Unknown"),
+                            "country": entry.get("country", "Unknown"),
+                            "isp": entry.get("isp", "Unknown"),
+                            "reports": entry.get("reports", 0),
+                            "recommendation": entry.get("recommendation", "N/A")
+                        })
+                    
+                    csv_path = generate_csv_report(history_for_csv)
+                    st.success(f"✅ CSV Report saved to: {csv_path}")
+                    
+                    # Provide download link
+                    with open(csv_path, "r") as f:
+                        csv_data = f.read()
+                    st.download_button(
+                        label="📥 Download CSV Report",
+                        data=csv_data,
+                        file_name=os.path.basename(csv_path),
+                        mime="text/csv"
+                    )
+                else:
+                    st.warning("No history found. Search some IPs first!")
+            else:
+                st.warning("No history file found. Search some IPs first!")
+    
+    with col2:
+        if st.button("📋 Export Flagged IPs (JSON)", use_container_width=True):
+            if flagged_ips:
+                import tempfile
+                temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+                json.dump(flagged_ips, temp_file, indent=4)
+                temp_file.close()
+                
+                with open(temp_file.name, 'r') as f:
+                    json_data = f.read()
+                
+                st.download_button(
+                    label="📥 Download Flagged IPs JSON",
+                    data=json_data,
+                    file_name="flagged_ips_export.json",
+                    mime="application/json"
+                )
+                st.success("Ready to download!")
+            else:
+                st.warning("No flagged IPs to export!")
+    
+    # Alert threshold info
+    st.markdown("---")
+    st.markdown("#### ℹ️ How the Alert System Works")
+    st.markdown("""
+    - Any IP with **abuse score >= 75** is automatically flagged as **Dangerous**
+    - Flagged IPs appear in this tab
+    - You can remove individual IPs or clear all alerts
+    - The alert system helps you track malicious IPs over time
+    """)
 
 # ============================================================
 # FOOTER
@@ -359,7 +466,7 @@ with tab3:
 st.markdown("---")
 st.markdown(
     "<p style='text-align: center; color: #64748b; font-size: 12px;'>"
-    "🛡️ Cyber Security Toolkit | IP Threat Intelligence | Password Checker | Caesar Cipher"
+    "🛡️ Cyber Security Toolkit | IP Threat Intelligence | Password Checker | Caesar Cipher | Alerts & Reports"
     "</p>", 
     unsafe_allow_html=True
 )
