@@ -12,16 +12,20 @@ FLAGGED_FILE = os.path.join(PROJECT_FOLDER, "data", "flagged_ips.json")
 import requests
 import json
 from datetime import datetime
-from config import API_KEY, API_URL, TIMEOUT, High_Threat, Medium_Threat, Max_History
-
+from config import API_KEY, API_URL, TIMEOUT, Max_History
+from config import Dangerous_Threat, High_Threat, Suspicious_Threat, Low_Threat, Safe
 #get the risk level based on the score (0-100)
 def get_risk(score):
-    if score >= High_Threat:
-        return "High"
-    elif score >= Medium_Threat:
-        return "Medium"
+    if score >= Dangerous_Threat:
+        return "Dangerous"
+    elif score >= High_Threat:
+        return "High Risk"
+    elif score >= Suspicious_Threat:
+        return "Suspicious"
+    elif score >= Low_Threat:
+        return "Low Risk"
     else:
-        return "Low"
+        return "Safe"
 
 #ask AbuseIPDB about an IP using the internet
 def check_from_internet(ip):
@@ -97,7 +101,7 @@ def check_ip(ip):
     if result is None:
         print("No internet. Using backup file.")
         result = check_from_file(ip)
-    
+
     return result
 
 #save result to history so we can see past searches
@@ -124,11 +128,12 @@ def save_history(result):
 #save dangerous IP to flagged list
 def save_dangerous(result):
     #only save if High risk
-    if result.get("risk") != "High":
+    risk = result.get("risk")
+    if risk not in ["Dangerous", "High Risk"]:
         return
     #add flag info
     result["flagged_date"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    result["reason"] = f"Score: {result['score']}"
+    result["reason"] = f"Score: {result['score']} - {risk}"
     
     try:
         #read old flagged IPs
@@ -149,3 +154,38 @@ def save_dangerous(result):
         json.dump(flagged, f, indent=2)
     
     print(f"FLAGGED: {result['ip']} is dangerous!")
+# Alias for dashboard.py instead of check_ip
+lookup_ip = check_ip
+
+
+"""
+if __name__ == "__main__":
+    
+    print("=" * 50)
+    print("TESTING IP LOOKUP")
+    print("=" * 50)
+    
+    # Test 1: Safe IP
+    print("\n1. Checking Google DNS (8.8.8.8)...")
+    result1 = check_ip("8.8.8.8")
+    print(f"   IP: {result1['ip']}")
+    print(f"   Score: {result1['score']}")
+    print(f"   Risk: {result1['risk']}")
+    print(f"   Country: {result1['country']}")
+    save_history(result1)
+    save_dangerous(result1)
+    
+    # Test 2: Dangerous IP
+    print("\n2. Checking Bad IP (185.220.101.1)...")
+    result2 = check_ip("185.220.101.1")
+    print(f"   IP: {result2['ip']}")
+    print(f"   Score: {result2['score']}")
+    print(f"   Risk: {result2['risk']}")
+    print(f"   Country: {result2['country']}")
+    save_history(result2)
+    save_dangerous(result2)
+    
+    print("\n" + "=" * 50)
+    print("TEST COMPLETE")
+    print("=" * 50)
+"""

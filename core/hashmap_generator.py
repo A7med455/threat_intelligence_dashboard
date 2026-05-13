@@ -26,7 +26,7 @@ def generate_sha1(text):
 
 
 def generate_sha256(text):
-    """""
+    """
     Generate a SHA256 hash from the given text.
     SHA256 produces a 64-character hex string.
     """

@@ -3,10 +3,10 @@ import os
 from datetime import datetime
 
 FLAGGED_IPS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "flagged_ips.json")
-# any IP with score >=  is considered malicious
+# any IP with score >= 75 is considered malicious
 MALICIOUS_THRESHOLD = 75
 
-#  Load & Save flagged_ips.json
+# Load & Save flagged_ips.json
 def _load_flagged():
     if not os.path.exists(FLAGGED_IPS_FILE):
         return []
@@ -44,17 +44,19 @@ def flag_ip(ip_data):
             "status": "skipped",
             "message": f"IP {ip_data.get('ip')} has score {score} — below threshold ({MALICIOUS_THRESHOLD}). Not flagged."
         }
-# alert record
+
+    # IP is malicious — create alert record
     alert = {
         "ip": ip_data.get("ip", "Unknown"),
         "score": score,
         "country": ip_data.get("country", "Unknown"),
         "reports": ip_data.get("reports", 0),
         "isp": ip_data.get("isp", "Unknown"),
-        "flagged_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "flagged_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "severity": _get_severity(score)
     }
- # Avoid duplicates
+
+    # Avoid duplicates
     flagged_list = _load_flagged()
     existing_ips = [entry.get("ip") for entry in flagged_list]
 

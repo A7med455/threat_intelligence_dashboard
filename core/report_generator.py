@@ -42,11 +42,11 @@ RECOMMENDATION:
           return filepath
 def generate_csv_report(ip_list:list[dict], output_dir:str ="reports")-> str:
         _ensure_dir(output_dir)
-        filednames = ["ip","score","country","isp","reports","risk_level","recommendation"]
+        fieldnames = ["ip","score","country","isp","reports","risk_level","recommendation"]
         filename   = f"batch_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         filepath   = os.path.join(output_dir, filename)
         with open(filepath,"w",newline="",encoding="utf-8") as f:
-            writer = csv.DictWriter(f,fieldnames=filednames,extrasaction="ignore")
+            writer = csv.DictWriter(f,fieldnames=fieldnames,extrasaction="ignore")
             writer.writeheader()
             for entry in ip_list:
                 writer.writerow(entry)
