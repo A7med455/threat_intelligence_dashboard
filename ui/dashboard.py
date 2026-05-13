@@ -160,7 +160,7 @@ searched_ip = render_search_bar()
 if searched_ip:
     with st.spinner(f"Looking up {searched_ip}..."):
         # Step 1: Get raw data from API (or fallback to sample data)
-        raw_data = lookup_ip(searched_ip)
+        raw_data = check_ip(searched_ip)
 
         # Step 2: Analyze and classify the threat
         analysis = analyze_threat(raw_data)
