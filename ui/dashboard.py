@@ -9,17 +9,16 @@ import sys
 # Add parent folder to path so Python finds all folders
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
-sys.path.insert(0, os.path.join(PROJECT_ROOT, "ui", "components"))
 
 # File paths
 HISTORY_PATH = os.path.join(PROJECT_ROOT, "data", "history.json")
 
-# SIMPLE IMPORTS - no __init__.py needed
+# IMPORTS - using full paths (VS Code will understand these)
 from core.ip_lookup import lookup_ip
 from core.threat_analyzer import analyze_threat
-from searchbar import render_search_bar
-from threatcards import render_threat_cards, render_empty_state
-from charts import render_score_gauge, render_history_chart, render_risk_pie
+from ui.components.searchbar import render_search_bar
+from ui.components.threatcards import render_threat_cards, render_empty_state
+from ui.components.charts import render_score_gauge, render_history_chart, render_risk_pie
 
 # -------------------------------------------------------
 # PAGE CONFIGURATION
