@@ -14,6 +14,7 @@ import json
 from datetime import datetime
 from config import API_KEY, API_URL, TIMEOUT, Max_History
 from config import Dangerous_Threat, High_Threat, Suspicious_Threat, Low_Threat, Safe
+
 #get the risk level based on the score (0-100)
 def get_risk(score):
     if score >= Dangerous_Threat:
@@ -37,7 +38,7 @@ def check_from_internet(ip):
     #params are the questions we ask the API (which IP, how far back to look)
     params = {
         "ipAddress": ip,
-        "maxAgeInDays": 90
+        "maxAgeInDays": 365
     }
     #send request to the website
     try:
@@ -63,13 +64,15 @@ def check_from_internet(ip):
                 "last_reported": ip_info.get("lastReportedAt", "Never"),
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
+            print(f"✅ API Success: {ip} - Score: {result['score']} - Risk: {result['risk']}")
             return result
         
         else:
             #website gave an error
+            print(f"❌ API Error: Status code {response.status_code} for {ip}")
             return None
-    except:
-        #no internet or something went wrong
+    except Exception as e:
+        print(f"❌ API Exception: {e}")
         return None
 
 #check the IP from the sample data file (backup plan)
@@ -83,23 +86,36 @@ def check_from_file(ip):
             if item["ip"] == ip:
                 item["time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 item["note"] = "offline data"
+                print(f"📁 Using backup data for {ip} - Score: {item['score']}")
                 return item
         
-        #if IP not found return first one as example
-        return all_ips[0]
+        # FIXED: If IP not found, create a proper response instead of returning random IP
+        print(f"⚠️ IP {ip} not found in sample data. Creating default response.")
+        return {
+            "ip": ip,
+            "score": 0,
+            "risk": "Unknown",
+            "country": "Unknown",
+            "isp": "Unknown",
+            "reports": 0,
+            "last_reported": "Never",
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "note": "IP not in database"
+        }
     
-    except:
-        print("Cannot open sample_data.json")
+    except Exception as e:
+        print(f"❌ Cannot open sample_data.json: {e}")
         return None
 
 #tries internet first, if it fails uses the backup file instead
 def check_ip(ip):
+    print(f"\n🔍 Looking up: {ip}")
     #first try internet
     result = check_from_internet(ip)
     
     #if internet failed, use backup file
     if result is None:
-        print("No internet. Using backup file.")
+        print("⚠️ No internet/API failed. Using backup file.")
         result = check_from_file(ip)
 
     return result
@@ -127,7 +143,7 @@ def save_history(result):
 
 #save dangerous IP to flagged list
 def save_dangerous(result):
-    #only save if High risk
+    #only save if Dangerous or High Risk
     risk = result.get("risk")
     if risk not in ["Dangerous", "High Risk"]:
         return
@@ -153,39 +169,7 @@ def save_dangerous(result):
     with open(FLAGGED_FILE, "w") as f:
         json.dump(flagged, f, indent=2)
     
-    print(f"FLAGGED: {result['ip']} is dangerous!")
+    print(f"🚨 FLAGGED: {result['ip']} is {risk}!")
+
 # Alias for dashboard.py instead of check_ip
 lookup_ip = check_ip
-
-
-"""
-if __name__ == "__main__":
-    
-    print("=" * 50)
-    print("TESTING IP LOOKUP")
-    print("=" * 50)
-    
-    # Test 1: Safe IP
-    print("\n1. Checking Google DNS (8.8.8.8)...")
-    result1 = check_ip("8.8.8.8")
-    print(f"   IP: {result1['ip']}")
-    print(f"   Score: {result1['score']}")
-    print(f"   Risk: {result1['risk']}")
-    print(f"   Country: {result1['country']}")
-    save_history(result1)
-    save_dangerous(result1)
-    
-    # Test 2: Dangerous IP
-    print("\n2. Checking Bad IP (185.220.101.1)...")
-    result2 = check_ip("185.220.101.1")
-    print(f"   IP: {result2['ip']}")
-    print(f"   Score: {result2['score']}")
-    print(f"   Risk: {result2['risk']}")
-    print(f"   Country: {result2['country']}")
-    save_history(result2)
-    save_dangerous(result2)
-    
-    print("\n" + "=" * 50)
-    print("TEST COMPLETE")
-    print("=" * 50)
-"""

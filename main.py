@@ -1,9 +1,9 @@
 # main.py
-# Click the RUN button in VS Code - that's it!
+# ENTRY POINT - Click the RUN button in VS Code to start the dashboard
 
 import subprocess
-import os
 import sys
+import os
 
 if __name__ == "__main__":
     # Get the folder where this main.py file is located
@@ -12,5 +12,8 @@ if __name__ == "__main__":
     # Change to that folder
     os.chdir(project_folder)
     
-    # Run the dashboard
-    subprocess.run([sys.executable, "-m", "streamlit", "run", "ui/dashboard.py"])
+    # Path to dashboard
+    dashboard_path = os.path.join(project_folder, "ui", "dashboard.py")
+    
+    # Run streamlit
+    subprocess.run([sys.executable, "-m", "streamlit", "run", dashboard_path])
