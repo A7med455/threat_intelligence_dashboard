@@ -1,0 +1,56 @@
+[
+    {
+        "ip": "8.8.8.8",
+        "score": 2,
+        "risk": "Low",
+        "country": "United States",
+        "isp": "Google LLC",
+        "reports": 15,
+        "last_reported": "2024-01-10"
+    },
+    {
+        "ip": "185.220.101.1",
+        "score": 95,
+        "risk": "High",
+        "country": "Germany",
+        "isp": "Tor Exit Node",
+        "reports": 1200,
+        "last_reported": "2024-01-15"
+    },
+    {
+        "ip": "1.1.1.1",
+        "score": 1,
+        "risk": "Low",
+        "country": "Australia",
+        "isp": "Cloudflare Inc",
+        "reports": 5,
+        "last_reported": "2024-01-12"
+    },
+    {
+        "ip": "45.33.32.156",
+        "score": 88,
+        "risk": "High",
+        "country": "United States",
+        "isp": "Linode LLC",
+        "reports": 850,
+        "last_reported": "2024-01-14"
+    },
+    {
+        "ip": "104.248.50.87",
+        "score": 92,
+        "risk": "High",
+        "country": "Netherlands",
+        "isp": "DigitalOcean",
+        "reports": 1100,
+        "last_reported": "2024-01-13"
+    },
+    {
+        "ip": "208.67.222.222",
+        "score": 3,
+        "risk": "Low",
+        "country": "United States",
+        "isp": "Cisco OpenDNS",
+        "reports": 10,
+        "last_reported": "2024-01-08"
+    }
+]
