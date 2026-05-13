@@ -1,5 +1,5 @@
 # main.py
-# Click the RUN button - works from any folder
+# Click the RUN button in VS Code - that's it!
 
 import subprocess
 import os
@@ -12,5 +12,5 @@ if __name__ == "__main__":
     # Change to that folder
     os.chdir(project_folder)
     
-    # Now run streamlit
+    # Run the dashboard
     subprocess.run([sys.executable, "-m", "streamlit", "run", "ui/dashboard.py"])
