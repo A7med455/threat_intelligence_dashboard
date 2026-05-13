@@ -1,8 +1,3 @@
-# ui/dashboard.py
-# GOAL: Main dashboard — wires all UI components together
-# This is what the user actually sees when they run the app
-# Run with: streamlit run ui/dashboard.py
-
 import streamlit as st
 import json
 import os
@@ -10,11 +5,10 @@ import sys
 
 # Add parent folder to path so we can import from core/ and ui/components/
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from core.ip_lookup       import lookup_ip
+from core.ip_lookup import check_ip, save_history, save_dangerous
 from core.threat_analyzer import analyze_threat
-from ui.components.search_bar   import render_search_bar
-from ui.components.threat_cards import render_threat_cards, render_empty_state
+from ui.components.searchbar   import render_search_bar
+from ui.components.threatcards import render_threat_cards, render_empty_state
 from ui.components.charts       import render_score_gauge, render_history_chart, render_risk_pie
 
 # -------------------------------------------------------
