@@ -1,9 +1,7 @@
 def analyze_threat(ip_data):
-
     score   = ip_data.get("score", 0)
     reports = ip_data.get("reports", 0)
-
-    extra_note = ""  # start empty, may be filled below
+    extra_note = ""
     if score == 0:
         risk_level     = "Safe"
         color          = "green"
@@ -31,9 +29,9 @@ def analyze_threat(ip_data):
         recommendation = "Critical threat. Immediate action required. Block and report."
     if reports > 500 and score < 50:
         extra_note = (
-            " Note: Despite the high number of reports, the abuse score is relatively low."
+            " Note:Despite the high number of reports, the abuse score is relatively low."
             " This could indicate a false positive or that the IP was cleaned up recently."
-            " Still, exercise caution and monitor closely."
+            " Consider investigating further before taking action."
         )
     return {
         "ip":             ip_data.get("ip", "Unknown"),
@@ -57,8 +55,8 @@ def classify_score_label(score):
 
 
 def get_score_color(score):
-    if score == 0:       return "#22c55e"   # green
-    elif score < 25:     return "#3b82f6"   # blue
-    elif score < 50:     return "#f97316"   # orange
-    elif score < 75:     return "#ef4444"   # red
-    else:                return "#7f1d1d"   # dark red
+    if score == 0:       return "#22c55e" 
+    elif score < 25:     return "#3b82f6" 
+    elif score < 50:     return "#f97316" 
+    elif score < 75:     return "#ef4444"  
+    else:                return "#7f1d1d" 
