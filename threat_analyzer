@@ -1,0 +1,68 @@
+def analyze_threat(ip_data):
+    score= ip_data.get("score", 0)
+    reports = ip_data.get("reports", 0)
+    if score == 0:
+        risk_level = "safe"
+        color = "green" 
+        emoji = "✅"
+        recommendation = "No threat detected. IP has a clean record."
+    elif score < 25:
+        risk_level = "low"
+        color = "🔵"
+        emoji = ""
+        recommendation = "minor reports. Exercise caution and monitor activity."
+    elif score < 50:
+        risk_level = "suspicious"
+        color = "orange"
+        emoji = "⚠️"
+        recommendation = "Multiple reports. investigate this IP before engaging."
+    elif score < 75:
+        risk_level = "high"
+        color = "red"
+        emoji = "❌"
+        recommendation = "High risk. Avoid interaction and consider blocking."
+    else:
+        risk_level = "Dangerous"
+        color = "darkred"
+        emoji = "🚨"
+        recommendation = "Critical threat. Immediate action required. Block and report."
+        extra_note=""
+        if reports > 500 and score <50:
+            extra_note = "Note: Despite the high number of reports, the abuse score is relatively low. This could indicate a false positive or that the IP has been cleaned up recently. Still, exercise caution and monitor closely."
+            return {
+                "ip": ip_data.get("ip", "Unknown"),
+                "score": score,
+                "reports": reports,
+                "country": ip_data.get("country", "Unknown"),
+                "isp": ip_data.get("isp", "Unknown"),
+                "domain": ip_data.get("domain", "Unknown"),
+                "risk_level": risk_level,
+                "color": color,
+                "emoji": emoji,
+                "recommendation": recommendation + extra_note,
+            }
+        
+        def classify_score_label(score):
+            if score == 0:
+                return "Safe"
+            elif score < 25:
+                return "Low Risk"
+            elif score < 50:
+                return "Suspicious"
+            elif score < 75:
+                return "High Risk"
+            else:
+                return "Dangerous"
+            
+            def get_score_color(score):
+                if score == 0:
+                    return "green"
+                elif score < 25:
+                    return "blue"
+                elif score < 50:
+                    return "orange"
+                elif score < 75:
+                    return "red"
+                else:
+                    return "darkred" 
+                
