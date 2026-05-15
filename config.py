@@ -1,5 +1,5 @@
 
-API_KEY = "ece5d12aba0dd3aa54710975e38fef5cc42c1f4e90c108b2d3603c849af33be68844e5aa6cb13da7"
+API_KEY = "paste ur API key"
 
 #we send request to this URL to check IP Address using our API Key
 API_URL = "https://api.abuseipdb.com/api/v2/check"
